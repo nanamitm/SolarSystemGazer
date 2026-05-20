@@ -96,7 +96,7 @@ jobs:
         run: |
           export PATH="$PWD:$PATH"
           ./linuxdeploy --appdir AppDir --plugin qt --output appimage
-          mv SolarSystemGazer-*-x86_64.AppImage SolarSystemGazer-linux-x64.AppImage
+          mv *.AppImage SolarSystemGazer-linux-x64.AppImage
 
       - uses: actions/upload-artifact@v4
         with:
@@ -157,7 +157,7 @@ jobs:
         run: |
           export PATH="$PWD:$PATH"
           ./linuxdeploy --appdir AppDir --plugin qt --output appimage
-          mv SolarSystemGazer-*-aarch64.AppImage SolarSystemGazer-linux-arm64.AppImage
+          mv *.AppImage SolarSystemGazer-linux-arm64.AppImage
 
       - uses: actions/upload-artifact@v4
         with:
