@@ -1,0 +1,180 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # ─── Windows 64-bit ───────────────────────────────────────────────────────
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt (MinGW 64-bit)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.*'
+          arch: 'win64_mingw'
+          tools: 'tools_mingw1310'
+          cache: true
+
+      - name: Configure and Build
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 4
+
+      - name: Package with windeployqt
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist
+          Copy-Item build\SolarSystemGazer.exe dist\
+          windeployqt --release dist\SolarSystemGazer.exe
+          Compress-Archive -Path dist\* -DestinationPath SolarSystemGazer-win64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win64
+          path: SolarSystemGazer-win64.zip
+
+  # ─── Linux x86_64 AppImage ────────────────────────────────────────────────
+  build-linux-x64:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt6 and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qt6-base-dev qt6-tools-dev qt6-tools-dev-tools \
+            libgl-dev libglu1-mesa-dev libxcb-cursor-dev \
+            cmake ninja-build icoutils
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -GNinja
+          cmake --build build --parallel 4
+
+      - name: Extract app icon (PNG)
+        run: icotool -x -i 4 build/app_icon.ico -o icon.png
+
+      - name: Prepare AppDir
+        run: |
+          mkdir -p AppDir/usr/bin \
+                   AppDir/usr/share/applications \
+                   AppDir/usr/share/icons/hicolor/256x256/apps
+          cp build/SolarSystemGazer AppDir/usr/bin/
+          cp icon.png AppDir/usr/share/icons/hicolor/256x256/apps/solarsystemgazer.png
+          cat > AppDir/usr/share/applications/solarsystemgazer.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Solar System Gazer
+          Exec=SolarSystemGazer
+          Icon=solarsystemgazer
+          Type=Application
+          Categories=Education;Science;
+          Comment=Solar system visualization based on NASA JPL orbital elements
+          EOF
+
+      - name: Download linuxdeploy
+        run: |
+          wget -qO ld.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -qO ldqt.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x ld.AppImage ldqt.AppImage
+
+      - name: Create AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          QMAKE: /usr/bin/qmake6
+        run: |
+          ./ld.AppImage --appdir AppDir --plugin qt --output appimage
+          mv SolarSystemGazer-*-x86_64.AppImage SolarSystemGazer-linux-x64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: SolarSystemGazer-linux-x64.AppImage
+
+  # ─── Linux ARM64 AppImage ─────────────────────────────────────────────────
+  build-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt6 and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qt6-base-dev qt6-tools-dev qt6-tools-dev-tools \
+            libgl-dev libglu1-mesa-dev libxcb-cursor-dev \
+            cmake ninja-build icoutils
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -GNinja
+          cmake --build build --parallel 4
+
+      - name: Extract app icon (PNG)
+        run: icotool -x -i 4 build/app_icon.ico -o icon.png
+
+      - name: Prepare AppDir
+        run: |
+          mkdir -p AppDir/usr/bin \
+                   AppDir/usr/share/applications \
+                   AppDir/usr/share/icons/hicolor/256x256/apps
+          cp build/SolarSystemGazer AppDir/usr/bin/
+          cp icon.png AppDir/usr/share/icons/hicolor/256x256/apps/solarsystemgazer.png
+          cat > AppDir/usr/share/applications/solarsystemgazer.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Solar System Gazer
+          Exec=SolarSystemGazer
+          Icon=solarsystemgazer
+          Type=Application
+          Categories=Education;Science;
+          Comment=Solar system visualization based on NASA JPL orbital elements
+          EOF
+
+      - name: Download linuxdeploy (ARM64)
+        run: |
+          wget -qO ld.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
+          wget -qO ldqt.AppImage \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-aarch64.AppImage
+          chmod +x ld.AppImage ldqt.AppImage
+
+      - name: Create AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          QMAKE: /usr/bin/qmake6
+        run: |
+          ./ld.AppImage --appdir AppDir --plugin qt --output appimage
+          mv SolarSystemGazer-*-aarch64.AppImage SolarSystemGazer-linux-arm64.AppImage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64
+          path: SolarSystemGazer-linux-arm64.AppImage
+
+  # ─── GitHub Release ───────────────────────────────────────────────────────
+  release:
+    needs: [build-windows, build-linux-x64, build-linux-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            SolarSystemGazer-win64.zip
+            SolarSystemGazer-linux-x64.AppImage
+            SolarSystemGazer-linux-arm64.AppImage
+          generate_release_notes: true
