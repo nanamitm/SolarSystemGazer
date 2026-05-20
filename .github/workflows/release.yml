@@ -83,18 +83,19 @@ jobs:
 
       - name: Download linuxdeploy
         run: |
-          wget -qO ld.AppImage \
+          wget -qO linuxdeploy \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          wget -qO ldqt.AppImage \
+          wget -qO linuxdeploy-plugin-qt \
             https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
-          chmod +x ld.AppImage ldqt.AppImage
+          chmod +x linuxdeploy linuxdeploy-plugin-qt
 
       - name: Create AppImage
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
           QMAKE: /usr/bin/qmake6
         run: |
-          ./ld.AppImage --appdir AppDir --plugin qt --output appimage
+          export PATH="$PWD:$PATH"
+          ./linuxdeploy --appdir AppDir --plugin qt --output appimage
           mv SolarSystemGazer-*-x86_64.AppImage SolarSystemGazer-linux-x64.AppImage
 
       - uses: actions/upload-artifact@v4
@@ -143,18 +144,19 @@ jobs:
 
       - name: Download linuxdeploy (ARM64)
         run: |
-          wget -qO ld.AppImage \
+          wget -qO linuxdeploy \
             https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-aarch64.AppImage
-          wget -qO ldqt.AppImage \
+          wget -qO linuxdeploy-plugin-qt \
             https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-aarch64.AppImage
-          chmod +x ld.AppImage ldqt.AppImage
+          chmod +x linuxdeploy linuxdeploy-plugin-qt
 
       - name: Create AppImage
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
           QMAKE: /usr/bin/qmake6
         run: |
-          ./ld.AppImage --appdir AppDir --plugin qt --output appimage
+          export PATH="$PWD:$PATH"
+          ./linuxdeploy --appdir AppDir --plugin qt --output appimage
           mv SolarSystemGazer-*-aarch64.AppImage SolarSystemGazer-linux-arm64.AppImage
 
       - uses: actions/upload-artifact@v4
