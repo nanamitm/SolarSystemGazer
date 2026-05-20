@@ -6,6 +6,7 @@
 
 #include <QSettings>
 #include <QCloseEvent>
+#include <QTimeZone>
 #include <QDialog>
 #include <QTableWidget>
 #include <QHeaderView>
@@ -43,9 +44,11 @@ void MainWindow::buildUi()
     // ----- 日時コントロール -----
     m_dtEdit = new QDateTimeEdit(this);
     m_dtEdit->setDisplayFormat("yyyy-MM-dd  hh:mm");
-    m_dtEdit->setTimeZone(QTimeZone::utc());
-    m_dtEdit->setMinimumDateTime(QDateTime({1800,  1,  1}, {0,  0}, QTimeZone::utc()));
-    m_dtEdit->setMaximumDateTime(QDateTime({2050, 12, 31}, {23, 59}, QTimeZone::utc()));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    m_dtEdit->setTimeZone(QTimeZone(Qt::UTC));
+#endif
+    m_dtEdit->setMinimumDateTime(QDateTime(QDate(1800,  1,  1), QTime(0,  0), QTimeZone(Qt::UTC)));
+    m_dtEdit->setMaximumDateTime(QDateTime(QDate(2050, 12, 31), QTime(23, 59), QTimeZone(Qt::UTC)));
     m_dtEdit->setDateTime(QDateTime::currentDateTimeUtc());
     m_dtEdit->setCalendarPopup(true);
     m_dtEdit->setFixedWidth(200);
@@ -451,7 +454,7 @@ void MainWindow::onShowEvents()
         // ダブルクリック起因の時間変更はイベントリストを更新しない
         m_suppressEventRefresh = true;
         m_dtEdit->setDateTime(QDateTime::fromMSecsSinceEpoch(
-            qint64((jd - 2440587.5) * 86400000.0), QTimeZone::utc()));
+            qint64((jd - 2440587.5) * 86400000.0), QTimeZone(Qt::UTC)));
         m_suppressEventRefresh = false;
 
         if (zoomCb->isChecked()) {
@@ -519,7 +522,7 @@ void MainWindow::onEventRefresh()
     for (int r = 0; r < events.size(); ++r) {
         const auto &ev = events[r];
         const QDateTime dt = QDateTime::fromMSecsSinceEpoch(
-            qint64((ev.jd - 2440587.5) * 86400000.0), QTimeZone::utc());
+            qint64((ev.jd - 2440587.5) * 86400000.0), QTimeZone(Qt::UTC));
 
         auto mk = [](const QString &s) {
             auto *item = new QTableWidgetItem(s);
