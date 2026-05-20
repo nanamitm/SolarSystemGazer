@@ -1,6 +1,6 @@
 # Solar System Gazer
 
-NASA JPL の軌道要素に基づいて太陽系の惑星配置をリアルタイムで可視化する Windows デスクトップアプリケーションです。
+NASA JPL の軌道要素に基づいて太陽系の惑星配置をリアルタイムで可視化するクロスプラットフォームのデスクトップアプリケーションです。
 
 ---
 
@@ -47,32 +47,43 @@ NASA JPL の軌道要素に基づいて太陽系の惑星配置をリアルタ�
 
 ## 動作環境
 
-- Windows 10 / 11（64 bit）
-- Qt 6.x（MinGW 64bit）
+| プラットフォーム | 動作確認済み環境 |
+|---|---|
+| Windows 10 / 11（64 bit） | Qt 6.8 + MinGW 64bit |
+| Linux x86\_64 | Ubuntu 24.04 / Qt 6.4 以降 |
+| Linux ARM64 | Ubuntu 24.04 ARM / Qt 6.4 以降 |
 
 ---
 
 ## ビルド方法
 
-### 必要なツール
-- [Qt 6.9 以降](https://www.qt.io/download)（MinGW コンポーネントを含む）
-- CMake 3.20 以降（Qt インストーラー同梱版で可）
+### 必要なもの
+- Qt **6.4 以降**（6.8 以降を推奨）
+- CMake 3.20 以降
 
-### ビルド手順
+### Windows（Qt インストーラー + MinGW）
 
-```bash
-mkdir build && cd build
-cmake .. -G "MinGW Makefiles" \
-    -DCMAKE_PREFIX_PATH="C:/Qt/6.x.x/mingw_64" \
-    -DCMAKE_CXX_COMPILER="C:/Qt/Tools/mingwXXXX_64/bin/g++.exe" \
-    -DCMAKE_MAKE_PROGRAM="C:/Qt/Tools/mingwXXXX_64/bin/mingw32-make.exe"
-cmake --build . --parallel
+```powershell
+cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
 ```
 
-### 配布用バイナリの作成
+> Qt インストーラーで MinGW コンポーネントを含めてインストールし、  
+> MinGW の `bin` ディレクトリを PATH に追加しておくと自動検出されます。
+
+配布用バイナリを作成する場合：
+
+```powershell
+windeployqt --release build\SolarSystemGazer.exe
+```
+
+### Linux（apt + Ninja）
 
 ```bash
-windeployqt build/SolarSystemGazer.exe
+sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools \
+                 libgl-dev cmake ninja-build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -GNinja
+cmake --build build --parallel
 ```
 
 ---
