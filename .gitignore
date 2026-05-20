@@ -1,0 +1,17 @@
+# Claude Code ローカル設定
+.claude/
+
+# CMake ビルドディレクトリ
+build/
+
+# デプロイ済みバイナリ
+deploy/
+
+# Qt Creator プロジェクトファイル
+*.user
+*.user.*
+CMakeLists.txt.user
+
+# OS 生成ファイル
+.DS_Store
+Thumbs.db
