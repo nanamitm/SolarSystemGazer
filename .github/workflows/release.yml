@@ -190,10 +190,11 @@ jobs:
       - name: Setup Android SDK & NDK
         uses: android-actions/setup-android@v3
         with:
+          # Qt 6.7.x は SDK 34 世代。新しい SDK 36 だと aapt2 が android.jar を読めない
           packages: >-
             ndk;27.2.12479018
-            platforms;android-36
-            build-tools;36.0.0
+            platforms;android-34
+            build-tools;34.0.0
 
       - name: Install Qt for Android (arm64-v8a + host desktop)
         uses: jurplel/install-qt-action@v4
@@ -205,9 +206,6 @@ jobs:
           extra: '--autodesktop'
           cache: true
 
-      - name: Decode signing keystore
-        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > "${{ runner.temp }}/keystore.jks"
-
       - name: Configure CMake
         run: |
           cmake -S . -B build-android -G Ninja -Wno-dev \
@@ -218,13 +216,20 @@ jobs:
             "-DANDROID_SDK_ROOT=${ANDROID_SDK_ROOT}" \
             "-DANDROID_NDK_ROOT=${ANDROID_SDK_ROOT}/ndk/27.2.12479018" \
             "-DQT_HOST_PATH=${QT_HOST_PATH}" \
+            -DSSG_ANDROID_COMPILE_SDK=34 \
+            -DSSG_ANDROID_BUILD_TOOLS=34.0.0 \
             -DCMAKE_BUILD_TYPE=Release
 
       - name: Build APK (unsigned release)
         # androiddeployqt は Gradle 成功後に非0で終了することがあるが APK は生成される
         run: cmake --build build-android || true
 
-      - name: Sign release APK
+      - name: Sign release APK (or keep unsigned if no secrets)
+        env:
+          KS_B64:    ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS:   ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS:  ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -e
           src=$(find build-android/android-build/build/outputs/apk/release -name "*.apk" 2>/dev/null | head -1)
@@ -232,21 +237,28 @@ jobs:
             src=$(find build-android -name "*release*.apk" 2>/dev/null | head -1)
           fi
           if [ -z "$src" ]; then echo "No release APK found"; find build-android -name "*.apk"; exit 1; fi
-          echo "Signing: $src"
-          BT="${ANDROID_SDK_ROOT}/build-tools/36.0.0"
-          "${BT}/zipalign" -f -p 4 "$src" "${{ runner.temp }}/aligned.apk"
-          "${BT}/apksigner" sign \
-            --ks "${{ runner.temp }}/keystore.jks" \
-            --ks-pass "pass:${{ secrets.ANDROID_STORE_PASSWORD }}" \
-            --ks-key-alias "${{ secrets.ANDROID_KEY_ALIAS }}" \
-            --key-pass "pass:${{ secrets.ANDROID_KEY_PASSWORD }}" \
-            --out "SolarSystemGazer-android-arm64.apk" "${{ runner.temp }}/aligned.apk"
-          "${BT}/apksigner" verify --print-certs "SolarSystemGazer-android-arm64.apk"
+          echo "Found APK: $src"
+          BT="${ANDROID_SDK_ROOT}/build-tools/34.0.0"
+          if [ -n "$KS_B64" ] && [ -n "$KEY_ALIAS" ]; then
+            echo "Signing release APK..."
+            echo "$KS_B64" | base64 -d > "${{ runner.temp }}/keystore.jks"
+            "${BT}/zipalign" -f -p 4 "$src" "${{ runner.temp }}/aligned.apk"
+            "${BT}/apksigner" sign \
+              --ks "${{ runner.temp }}/keystore.jks" \
+              --ks-pass "pass:${KS_PASS}" \
+              --ks-key-alias "${KEY_ALIAS}" \
+              --key-pass "pass:${KEY_PASS}" \
+              --out "SolarSystemGazer-android-arm64.apk" "${{ runner.temp }}/aligned.apk"
+            "${BT}/apksigner" verify --print-certs "SolarSystemGazer-android-arm64.apk"
+          else
+            echo "::warning::署名Secrets未設定のため未署名APKを出力します（ANDROID_KEYSTORE_BASE64 等を設定してください）"
+            cp "$src" "SolarSystemGazer-android-arm64-unsigned.apk"
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
           name: android-arm64
-          path: SolarSystemGazer-android-arm64.apk
+          path: SolarSystemGazer-android-arm64*.apk
 
   # ─── GitHub Release ───────────────────────────────────────────────────────
   release:
@@ -263,5 +275,5 @@ jobs:
             SolarSystemGazer-win64.zip
             SolarSystemGazer-linux-x64.AppImage
             SolarSystemGazer-linux-arm64.AppImage
-            SolarSystemGazer-android-arm64.apk
+            SolarSystemGazer-android-arm64*.apk
           generate_release_notes: true

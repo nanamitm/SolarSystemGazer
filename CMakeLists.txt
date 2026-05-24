@@ -94,6 +94,10 @@ if(ANDROID)
         Qt6::Core Qt6::Gui Qt6::Quick Qt6::QuickControls2
     )
 
+    # Android SDK バージョン（ローカルは新しめの既定値。CI の古い Qt 用に -D で上書き可能）
+    set(SSG_ANDROID_COMPILE_SDK "36"     CACHE STRING "Android compileSdk version")
+    set(SSG_ANDROID_BUILD_TOOLS "36.0.0" CACHE STRING "Android build-tools revision")
+
     set_target_properties(SolarSystemGazer PROPERTIES
         QT_ANDROID_PACKAGE_NAME              "net.nanamitm.solarsystemgazer"
         QT_ANDROID_APP_NAME                  "Solar System Gazer"
@@ -102,8 +106,8 @@ if(ANDROID)
         QT_ANDROID_PACKAGE_SOURCE_DIR        "${CMAKE_CURRENT_SOURCE_DIR}/android"
         QT_ANDROID_MIN_SDK_VERSION           28
         QT_ANDROID_TARGET_SDK_VERSION        34
-        QT_ANDROID_COMPILE_SDK_VERSION       36
-        QT_ANDROID_SDK_BUILD_TOOLS_REVISION  36.0.0
+        QT_ANDROID_COMPILE_SDK_VERSION       ${SSG_ANDROID_COMPILE_SDK}
+        QT_ANDROID_SDK_BUILD_TOOLS_REVISION  ${SSG_ANDROID_BUILD_TOOLS}
     )
 
     # Release ビルドの APK 署名。
