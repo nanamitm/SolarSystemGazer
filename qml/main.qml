@@ -37,6 +37,15 @@ ApplicationWindow {
     readonly property var speedSecs: [3600, 21600, 43200, 86400, 604800,
                                        2592000, 7776000, 31557600, 157788000, 315576000]
 
+    // セーフエリア余白。SafeArea は Qt 6.9+ のみ存在するため、
+    // 古い Qt(例: 6.7) では未定義となり例外になる。その場合は 0 にフォールバックする。
+    // （未定義参照で NaN 高さになり上下バーが消えるのを防ぐ）
+    function safeMargin(edge) {
+        try { return SafeArea.margins[edge] } catch (e) { return 0 }
+    }
+    readonly property real safeTopMargin:    safeMargin("top")
+    readonly property real safeBottomMargin: safeMargin("bottom")
+
     // ─── 設定の永続化 ──────────────────────────────────────────────────
     // 書き込み可能なプロパティは alias で自動保存/復元
     Settings {
@@ -137,11 +146,11 @@ ApplicationWindow {
         id: topBar
         visible: root.isPortrait
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: 52 + SafeArea.margins.top
+        height: 52 + root.safeTopMargin
         color: "#d01e1e2e"   // 半透明ダーク
 
         RowLayout {
-            anchors { fill: parent; topMargin: SafeArea.margins.top; leftMargin: 12; rightMargin: 12 }
+            anchors { fill: parent; topMargin: root.safeTopMargin; leftMargin: 12; rightMargin: 12 }
             spacing: 8
 
             Label {
@@ -179,11 +188,11 @@ ApplicationWindow {
         id: bottomBar
         visible: root.isPortrait
         anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
-        height: 62 + SafeArea.margins.bottom
+        height: 62 + root.safeBottomMargin
         color: "#d01e1e2e"
 
         RowLayout {
-            anchors { fill: parent; leftMargin: 8; rightMargin: 8; bottomMargin: SafeArea.margins.bottom }
+            anchors { fill: parent; leftMargin: 8; rightMargin: 8; bottomMargin: root.safeBottomMargin }
             spacing: 4
 
             // 日時ピッカー呼び出しボタン
