@@ -186,6 +186,8 @@ ApplicationWindow {
                 icon.name: "settings"
                 text: "⚙"
                 font.pixelSize: 18
+                font.family: "sans-serif"
+                Material.foreground: Material.primary
                 onClicked: settingsDrawer.open()
                 implicitWidth: 44
                 implicitHeight: 36
@@ -210,8 +212,10 @@ ApplicationWindow {
             ToolButton {
                 text: "📅"
                 font.pixelSize: 16
+                font.family: "sans-serif"
                 implicitWidth: 44
                 implicitHeight: 44
+                Material.foreground: Material.primary
                 onClicked: datePickerDialog.open()
                 ToolTip.text: "日時を指定"
                 ToolTip.visible: hovered
@@ -234,6 +238,7 @@ ApplicationWindow {
             ToolButton {
                 text: "|◀"
                 font.pixelSize: 14
+                font.family: "sans-serif"
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
@@ -249,8 +254,10 @@ ApplicationWindow {
                 property bool playing: false
                 text: playing ? "⏸" : "▶"
                 font.pixelSize: 18
+                font.family: "sans-serif"
                 implicitWidth: 52
                 implicitHeight: 44
+                Material.foreground: Material.primary
                 highlighted: playing
                 onClicked: {
                     playing = !playing
@@ -264,6 +271,7 @@ ApplicationWindow {
             ToolButton {
                 text: "▶|"
                 font.pixelSize: 14
+                font.family: "sans-serif"
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
