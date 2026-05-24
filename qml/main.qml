@@ -246,7 +246,7 @@ ApplicationWindow {
             ToolButton {
                 id: playBtn
                 property bool playing: false
-                text: playing ? "⏸" : "▶"
+                text: playing ? "||" : ">"
                 font.pixelSize: 20
                 implicitWidth: 50
                 implicitHeight: 44
