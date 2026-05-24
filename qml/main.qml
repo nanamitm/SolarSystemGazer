@@ -40,11 +40,20 @@ ApplicationWindow {
     // セーフエリア余白。SafeArea は Qt 6.9+ のみ存在するため、
     // 古い Qt(例: 6.7) では未定義となり例外になる。その場合は 0 にフォールバックする。
     // （未定義参照で NaN 高さになり上下バーが消えるのを防ぐ）
-    function safeMargin(edge) {
-        try { return SafeArea.margins[edge] } catch (e) { return 0 }
+    readonly property real safeTopMargin: {
+        try {
+            return typeof SafeArea !== 'undefined' && SafeArea.margins ? SafeArea.margins.top : 0;
+        } catch (e) {
+            return 0;
+        }
     }
-    readonly property real safeTopMargin:    safeMargin("top")
-    readonly property real safeBottomMargin: safeMargin("bottom")
+    readonly property real safeBottomMargin: {
+        try {
+            return typeof SafeArea !== 'undefined' && SafeArea.margins ? SafeArea.margins.bottom : 0;
+        } catch (e) {
+            return 0;
+        }
+    }
 
     // ─── 設定の永続化 ──────────────────────────────────────────────────
     // 書き込み可能なプロパティは alias で自動保存/復元
@@ -144,6 +153,7 @@ ApplicationWindow {
     // ─── 上部バー ──────────────────────────────────────────────────────
     Rectangle {
         id: topBar
+        z: 100
         visible: root.isPortrait
         anchors { top: parent.top; left: parent.left; right: parent.right }
         height: 52 + root.safeTopMargin
@@ -186,6 +196,7 @@ ApplicationWindow {
     // ─── 下部コントロールバー ──────────────────────────────────────────
     Rectangle {
         id: bottomBar
+        z: 100
         visible: root.isPortrait
         anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
         height: 62 + root.safeBottomMargin
