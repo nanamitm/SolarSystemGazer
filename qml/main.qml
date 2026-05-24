@@ -184,10 +184,7 @@ ApplicationWindow {
             // 設定ボタン
             ToolButton {
                 icon.name: "settings"
-                text: "⚙"
-                font.pixelSize: 18
-                font.family: "sans-serif"
-                Material.foreground: Material.primary
+                font.pixelSize: 14
                 onClicked: settingsDrawer.open()
                 implicitWidth: 44
                 implicitHeight: 36
@@ -210,12 +207,10 @@ ApplicationWindow {
 
             // 日時ピッカー呼び出しボタン
             ToolButton {
-                text: "📅"
-                font.pixelSize: 16
-                font.family: "sans-serif"
+                text: "日時"
+                font.pixelSize: 11
                 implicitWidth: 44
                 implicitHeight: 44
-                Material.foreground: Material.primary
                 onClicked: datePickerDialog.open()
                 ToolTip.text: "日時を指定"
                 ToolTip.visible: hovered
@@ -224,7 +219,7 @@ ApplicationWindow {
             // 現在時刻
             ToolButton {
                 text: "現在"
-                font.pixelSize: 12
+                font.pixelSize: 11
                 implicitWidth: 52
                 implicitHeight: 44
                 onClicked: {
@@ -236,9 +231,8 @@ ApplicationWindow {
 
             // コマ戻し
             ToolButton {
-                text: "|◀"
-                font.pixelSize: 14
-                font.family: "sans-serif"
+                text: "◀"
+                font.pixelSize: 16
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
@@ -252,12 +246,10 @@ ApplicationWindow {
             ToolButton {
                 id: playBtn
                 property bool playing: false
-                text: playing ? "⏸" : "▶"
-                font.pixelSize: 18
-                font.family: "sans-serif"
-                implicitWidth: 52
+                text: playing ? "●停止" : "▶再生"
+                font.pixelSize: 11
+                implicitWidth: 60
                 implicitHeight: 44
-                Material.foreground: Material.primary
                 highlighted: playing
                 onClicked: {
                     playing = !playing
@@ -269,9 +261,8 @@ ApplicationWindow {
 
             // コマ進め
             ToolButton {
-                text: "▶|"
-                font.pixelSize: 14
-                font.family: "sans-serif"
+                text: "▶"
+                font.pixelSize: 16
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
