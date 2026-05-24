@@ -231,8 +231,8 @@ ApplicationWindow {
 
             // コマ戻し
             ToolButton {
-                text: "◀"
-                font.pixelSize: 16
+                text: "<"
+                font.pixelSize: 18
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
@@ -246,9 +246,9 @@ ApplicationWindow {
             ToolButton {
                 id: playBtn
                 property bool playing: false
-                text: playing ? "●停止" : "▶再生"
-                font.pixelSize: 11
-                implicitWidth: 60
+                text: playing ? "⏸" : "▶"
+                font.pixelSize: 20
+                implicitWidth: 50
                 implicitHeight: 44
                 highlighted: playing
                 onClicked: {
@@ -261,8 +261,8 @@ ApplicationWindow {
 
             // コマ進め
             ToolButton {
-                text: "▶"
-                font.pixelSize: 16
+                text: ">"
+                font.pixelSize: 18
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
