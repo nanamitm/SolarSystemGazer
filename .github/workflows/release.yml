@@ -170,7 +170,9 @@ jobs:
   #   ANDROID_STORE_PASSWORD  – キーストアのパスワード
   #   ANDROID_KEY_ALIAS       – 鍵エイリアス（solarsystemgazer）
   #   ANDROID_KEY_PASSWORD    – 鍵のパスワード
-  # ※ローカル開発と同じ Qt 6.11 系を使用（android_arm64_v8a は 6.9 以降で提供）
+  # ※CI(aqt)が提供する Android 版は 6.7.x が最新（6.8+ は未提供）。
+  #   6.7.x は SafeArea(6.7+)/Tumbler/QtCore Settings を含むのでビルド可能。
+  #   ローカル開発は 6.11.1。配布物は CI の 6.7.x ビルドになる点に注意。
   build-android:
     runs-on: ubuntu-latest
     steps:
@@ -196,7 +198,7 @@ jobs:
       - name: Install Qt for Android (arm64-v8a + host desktop)
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.11.*'
+          version: '6.7.*'
           host: 'linux'
           target: 'android'
           arch: 'android_arm64_v8a'
