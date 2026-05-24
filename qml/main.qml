@@ -184,7 +184,8 @@ ApplicationWindow {
             // 設定ボタン
             ToolButton {
                 icon.name: "settings"
-                font.pixelSize: 14
+                text: "⚙"
+                font.pixelSize: 18
                 onClicked: settingsDrawer.open()
                 implicitWidth: 44
                 implicitHeight: 36
@@ -207,8 +208,8 @@ ApplicationWindow {
 
             // 日時ピッカー呼び出しボタン
             ToolButton {
-                text: "日時"
-                font.pixelSize: 11
+                text: "📅"
+                font.pixelSize: 16
                 implicitWidth: 44
                 implicitHeight: 44
                 onClicked: datePickerDialog.open()
@@ -219,7 +220,7 @@ ApplicationWindow {
             // 現在時刻
             ToolButton {
                 text: "現在"
-                font.pixelSize: 11
+                font.pixelSize: 12
                 implicitWidth: 52
                 implicitHeight: 44
                 onClicked: {
@@ -231,8 +232,8 @@ ApplicationWindow {
 
             // コマ戻し
             ToolButton {
-                text: "<"
-                font.pixelSize: 18
+                text: "|◀"
+                font.pixelSize: 14
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
@@ -247,8 +248,8 @@ ApplicationWindow {
                 id: playBtn
                 property bool playing: false
                 text: playing ? "⏸" : "▶"
-                font.pixelSize: 20
-                implicitWidth: 50
+                font.pixelSize: 18
+                implicitWidth: 52
                 implicitHeight: 44
                 highlighted: playing
                 onClicked: {
@@ -261,8 +262,8 @@ ApplicationWindow {
 
             // コマ進め
             ToolButton {
-                text: ">"
-                font.pixelSize: 18
+                text: "▶|"
+                font.pixelSize: 14
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
