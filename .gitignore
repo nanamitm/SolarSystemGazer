@@ -3,9 +3,15 @@
 
 # CMake ビルドディレクトリ
 build/
+build-android/
+build-android-release/
 
 # デプロイ済みバイナリ
 deploy/
+
+# Android 署名 — 絶対にコミットしない
+android-signing.properties
+keystore/
 
 # Qt Creator プロジェクトファイル
 *.user
