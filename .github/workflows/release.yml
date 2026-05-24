@@ -206,6 +206,13 @@ jobs:
           extra: '--autodesktop'
           cache: true
 
+      - name: Pin Android platform to 34
+        # Qt 6.7.x の aapt2 はランナー同梱の SDK 35/36(ext) の android.jar を解析できないため、
+        # それらを削除して android-34 を最新プラットフォームにする
+        run: |
+          rm -rf "${ANDROID_SDK_ROOT}"/platforms/android-3[56]* || true
+          echo "Remaining platforms:"; ls "${ANDROID_SDK_ROOT}/platforms"
+
       - name: Configure CMake
         run: |
           cmake -S . -B build-android -G Ninja -Wno-dev \
