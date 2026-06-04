@@ -188,8 +188,17 @@ ApplicationWindow {
     // parent.pressed / parent.enabled の変化を iconColor 経由で検知して再描画する。
     component IconCanvas: Canvas {
         property color iconColor: parent.pressed ? "#ffffff" : (parent.enabled ? "#cccccc" : "#666666")
+        property real iconScale: 0.78
         onIconColorChanged: requestPaint()
         Component.onCompleted: requestPaint()
+
+        function beginScaled(ctx) {
+            var s = iconScale
+            ctx.save()
+            ctx.translate(width * (1 - s) * 0.5, height * (1 - s) * 0.5)
+            ctx.scale(s, s)
+        }
+        function endScaled(ctx) { ctx.restore() }
     }
 
     // ─── 太陽系ビュー (フルスクリーン) ─────────────────────────────────
@@ -264,7 +273,9 @@ ApplicationWindow {
                     onPaint: {
                         var ctx = getContext("2d")
                         ctx.clearRect(0, 0, width, height)
+                        beginScaled(ctx)
                         root.icnConjunction(ctx, width, height, iconColor)
+                        endScaled(ctx)
                     }
                 }
             }
@@ -280,7 +291,9 @@ ApplicationWindow {
                     onPaint: {
                         var ctx = getContext("2d")
                         ctx.clearRect(0, 0, width, height)
+                        beginScaled(ctx)
                         root.icnGear(ctx, width, height, iconColor)
+                        endScaled(ctx)
                     }
                 }
             }
@@ -311,7 +324,9 @@ ApplicationWindow {
                     onPaint: {
                         var ctx = getContext("2d")
                         ctx.clearRect(0, 0, width, height)
+                        beginScaled(ctx)
                         root.icnCalendar(ctx, width, height, iconColor)
+                        endScaled(ctx)
                     }
                 }
             }
@@ -331,7 +346,9 @@ ApplicationWindow {
                     onPaint: {
                         var ctx = getContext("2d")
                         ctx.clearRect(0, 0, width, height)
+                        beginScaled(ctx)
                         root.icnClock(ctx, width, height, iconColor)
+                        endScaled(ctx)
                     }
                 }
             }
@@ -351,7 +368,9 @@ ApplicationWindow {
                     onPaint: {
                         var ctx = getContext("2d")
                         ctx.clearRect(0, 0, width, height)
+                        beginScaled(ctx)
                         root.icnStepBack(ctx, width, height, iconColor)
+                        endScaled(ctx)
                     }
                 }
             }
@@ -376,8 +395,10 @@ ApplicationWindow {
                     onPaint: {
                         var ctx = getContext("2d")
                         ctx.clearRect(0, 0, width, height)
+                        beginScaled(ctx)
                         if (playBtn.playing) root.icnPause(ctx, width, height, iconColor)
                         else                 root.icnPlay(ctx, width, height, iconColor)
+                        endScaled(ctx)
                     }
                     Connections {
                         target: playBtn
@@ -401,7 +422,9 @@ ApplicationWindow {
                     onPaint: {
                         var ctx = getContext("2d")
                         ctx.clearRect(0, 0, width, height)
+                        beginScaled(ctx)
                         root.icnStepFwd(ctx, width, height, iconColor)
+                        endScaled(ctx)
                     }
                 }
             }
