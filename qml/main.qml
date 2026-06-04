@@ -37,26 +37,19 @@ ApplicationWindow {
     readonly property var speedSecs: [3600, 21600, 43200, 86400, 604800,
                                        2592000, 7776000, 31557600, 157788000, 315576000]
 
-    // セーフエリア余白。SafeArea は Qt 6.9+ のみ存在するため、
-    // 古い Qt(例: 6.7) では未定義となり例外になる。その場合は 0 にフォールバックする。
-    // （未定義参照で NaN 高さになり上下バーが消えるのを防ぐ）
+    // セーフエリア余白
     readonly property real safeTopMargin: {
         try {
             return typeof SafeArea !== 'undefined' && SafeArea.margins ? SafeArea.margins.top : 0;
-        } catch (e) {
-            return 0;
-        }
+        } catch (e) { return 0; }
     }
     readonly property real safeBottomMargin: {
         try {
             return typeof SafeArea !== 'undefined' && SafeArea.margins ? SafeArea.margins.bottom : 0;
-        } catch (e) {
-            return 0;
-        }
+        } catch (e) { return 0; }
     }
 
     // ─── 設定の永続化 ──────────────────────────────────────────────────
-    // 書き込み可能なプロパティは alias で自動保存/復元
     Settings {
         id: appSettings
         property alias showLabels:       solarView.showLabels
@@ -65,13 +58,11 @@ ApplicationWindow {
         property alias dirLock:          solarView.dirLock
         property alias centerBody:       solarView.centerBody
         property alias speedIndex:       speedCombo.currentIndex
-        // カメラは読み取り専用プロパティのため手動で保存/復元
         property real camLon:  30.0
         property real camLat:  30.0
         property real camDist: 50.0
     }
 
-    // カメラ変更を設定へ保存 / 時刻変更でイベントリストを自動更新
     Connections {
         target: solarView
         function onCameraChanged() {
@@ -85,7 +76,6 @@ ApplicationWindow {
         }
     }
 
-    // イベントリスト再計算のデバウンス（デスクトップ版と同じ500ms）
     Timer {
         id: eventRefreshTimer
         interval: 500
@@ -93,13 +83,113 @@ ApplicationWindow {
         onTriggered: if (eventSheet.opened) eventList.refresh()
     }
 
-    // 起動時にカメラを復元（centerBody 復元による camDist 上書き後に適用）
-    // setCamera が onCameraChanged 経由で appSettings.camDist を書き換えるため、
-    // 復元値は先にローカルへ退避してから適用する
     Component.onCompleted: {
         var savedDist = appSettings.camDist
         solarView.setCamera(appSettings.camLon, appSettings.camLat)
         solarView.setCameraDistance(savedDist)
+    }
+
+    // ─── ボタンアイコン描画関数 ───────────────────────────────────────
+    // デスクトップ版 button_icons.h と同じ形状定義
+
+    function icnPlay(ctx, w, h, c) {
+        ctx.fillStyle = c
+        ctx.beginPath()
+        ctx.moveTo(w*0.25, h*0.13); ctx.lineTo(w*0.82, h*0.50); ctx.lineTo(w*0.25, h*0.87)
+        ctx.closePath(); ctx.fill()
+    }
+
+    function icnPause(ctx, w, h, c) {
+        ctx.fillStyle = c
+        ctx.fillRect(w*0.22, h*0.13, w*0.22, h*0.74)
+        ctx.fillRect(w*0.56, h*0.13, w*0.22, h*0.74)
+    }
+
+    function icnStepBack(ctx, w, h, c) {
+        ctx.fillStyle = c
+        ctx.fillRect(w*0.10, h*0.15, w*0.14, h*0.70)
+        ctx.beginPath()
+        ctx.moveTo(w*0.88, h*0.15); ctx.lineTo(w*0.30, h*0.50); ctx.lineTo(w*0.88, h*0.85)
+        ctx.closePath(); ctx.fill()
+    }
+
+    function icnStepFwd(ctx, w, h, c) {
+        ctx.fillStyle = c
+        ctx.beginPath()
+        ctx.moveTo(w*0.12, h*0.15); ctx.lineTo(w*0.70, h*0.50); ctx.lineTo(w*0.12, h*0.85)
+        ctx.closePath(); ctx.fill()
+        ctx.fillRect(w*0.76, h*0.15, w*0.14, h*0.70)
+    }
+
+    function icnClock(ctx, w, h, c) {
+        var cx = w/2, cy = h/2, r = w*0.42
+        ctx.strokeStyle = c; ctx.lineWidth = w*0.09; ctx.lineCap = "butt"
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke()
+        ctx.lineCap = "round"
+        var ha = -60 * Math.PI / 180
+        ctx.lineWidth = w*0.11
+        ctx.beginPath(); ctx.moveTo(cx, cy)
+        ctx.lineTo(cx + r*0.45*Math.cos(ha), cy + r*0.45*Math.sin(ha)); ctx.stroke()
+        var ma = -90 * Math.PI / 180
+        ctx.lineWidth = w*0.09
+        ctx.beginPath(); ctx.moveTo(cx, cy)
+        ctx.lineTo(cx + r*0.65*Math.cos(ma), cy + r*0.65*Math.sin(ma)); ctx.stroke()
+        ctx.fillStyle = c
+        ctx.beginPath(); ctx.arc(cx, cy, w*0.07, 0, Math.PI*2); ctx.fill()
+    }
+
+    function icnCalendar(ctx, w, h, c) {
+        var m = w*0.08, bx = m, by = m + h*0.12
+        var bw = w - m*2, bh = h*0.80 - m, hdr = bh*0.32
+        ctx.strokeStyle = c; ctx.lineWidth = w*0.07; ctx.lineJoin = "round"; ctx.lineCap = "square"
+        ctx.strokeRect(bx, by, bw, bh)
+        ctx.beginPath(); ctx.moveTo(bx, by+hdr); ctx.lineTo(bx+bw, by+hdr); ctx.stroke()
+        ctx.lineWidth = w*0.09; ctx.lineCap = "round"
+        ctx.beginPath(); ctx.moveTo(bx+bw*0.28, by-h*0.10); ctx.lineTo(bx+bw*0.28, by+h*0.06); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(bx+bw*0.72, by-h*0.10); ctx.lineTo(bx+bw*0.72, by+h*0.06); ctx.stroke()
+        ctx.fillStyle = c
+        var dr = w*0.07, gx0 = bx+bw*0.18, gy0 = by+hdr+(bh-hdr)*0.28
+        var gsx = bw*0.32, gsy = (bh-hdr)*0.45
+        for (var col = 0; col < 3; col++)
+            for (var row = 0; row < 2; row++) {
+                ctx.beginPath(); ctx.arc(gx0+col*gsx, gy0+row*gsy, dr, 0, Math.PI*2); ctx.fill()
+            }
+    }
+
+    function icnGear(ctx, w, h, c) {
+        var cx = w/2, cy = h/2, Ro = w*0.46, Ri = w*0.34, Rh = w*0.17, N = 8, dA = Math.PI/N
+        ctx.fillStyle = c; ctx.beginPath()
+        for (var i = 0; i < N; i++) {
+            var a0 = 2*Math.PI*i/N - dA*0.45, a1 = 2*Math.PI*i/N - dA*0.20
+            var a2 = 2*Math.PI*i/N + dA*0.20, a3 = 2*Math.PI*i/N + dA*0.45
+            if (i === 0) ctx.moveTo(cx + Ri*Math.cos(a0), cy + Ri*Math.sin(a0))
+            else         ctx.lineTo(cx + Ri*Math.cos(a0), cy + Ri*Math.sin(a0))
+            ctx.lineTo(cx + Ro*Math.cos(a1), cy + Ro*Math.sin(a1))
+            ctx.lineTo(cx + Ro*Math.cos(a2), cy + Ro*Math.sin(a2))
+            ctx.lineTo(cx + Ri*Math.cos(a3), cy + Ri*Math.sin(a3))
+        }
+        ctx.closePath(); ctx.fill()
+        ctx.globalCompositeOperation = "destination-out"
+        ctx.beginPath(); ctx.arc(cx, cy, Rh, 0, Math.PI*2); ctx.fill()
+        ctx.globalCompositeOperation = "source-over"
+    }
+
+    function icnConjunction(ctx, w, h, c) {
+        ctx.strokeStyle = c; ctx.lineWidth = w*0.08; ctx.lineCap = "round"
+        ctx.beginPath(); ctx.moveTo(w*0.05, h*0.50); ctx.lineTo(w*0.95, h*0.50); ctx.stroke()
+        ctx.fillStyle = c
+        ctx.beginPath(); ctx.arc(w*0.23, h*0.50, w*0.14, 0, Math.PI*2); ctx.fill()
+        ctx.strokeStyle = c; ctx.lineWidth = w*0.08; ctx.lineCap = "butt"
+        ctx.beginPath(); ctx.arc(w*0.72, h*0.50, w*0.20, 0, Math.PI*2); ctx.stroke()
+    }
+
+    // ─── 再利用可能アイコンキャンバス ────────────────────────────────
+    // contentItem として ToolButton に渡す。
+    // parent.pressed / parent.enabled の変化を iconColor 経由で検知して再描画する。
+    component IconCanvas: Canvas {
+        property color iconColor: parent.pressed ? "#ffffff" : (parent.enabled ? "#cccccc" : "#666666")
+        onIconColorChanged: requestPaint()
+        Component.onCompleted: requestPaint()
     }
 
     // ─── 太陽系ビュー (フルスクリーン) ─────────────────────────────────
@@ -107,17 +197,13 @@ ApplicationWindow {
         id: solarView
         anchors.fill: parent
 
-        // 1本指ドラッグ → 視点回転
         DragHandler {
             id: drag
             target: null
             minimumPointCount: 1
             maximumPointCount: 1
             property point lastPos
-
-            onActiveChanged: {
-                if (active) lastPos = centroid.position
-            }
+            onActiveChanged: { if (active) lastPos = centroid.position }
             onCentroidChanged: {
                 if (active) {
                     solarView.rotateDelta(centroid.position.x - lastPos.x,
@@ -127,22 +213,17 @@ ApplicationWindow {
             }
         }
 
-        // 2本指ピンチ → ズーム
         PinchHandler {
             id: pinch
             target: null
             property real lastScale: 1.0
-
-            onActiveChanged: {
-                if (active) lastScale = activeScale
-            }
+            onActiveChanged: { if (active) lastScale = activeScale }
             onActiveScaleChanged: {
                 solarView.pinchZoom(activeScale / lastScale)
                 lastScale = activeScale
             }
         }
 
-        // タップ → 天体選択 / 長押し → 表示設定メニュー
         TapHandler {
             onTapped: (eventPoint) => solarView.tap(eventPoint.position.x,
                                                      eventPoint.position.y)
@@ -157,7 +238,7 @@ ApplicationWindow {
         visible: root.isPortrait
         anchors { top: parent.top; left: parent.left; right: parent.right }
         height: 52 + root.safeTopMargin
-        color: "#d01e1e2e"   // 半透明ダーク
+        color: "#d01e1e2e"
 
         RowLayout {
             anchors { fill: parent; topMargin: root.safeTopMargin; leftMargin: 12; rightMargin: 12 }
@@ -174,20 +255,34 @@ ApplicationWindow {
 
             // 合・衝イベントボタン
             ToolButton {
-                text: "合・衝"
-                font.pixelSize: 12
-                onClicked: eventSheet.open()
-                implicitWidth: 64
+                implicitWidth: 44
                 implicitHeight: 36
+                onClicked: eventSheet.open()
+                ToolTip.text: "合・衝・最大離角イベント"
+                ToolTip.visible: hovered
+                contentItem: IconCanvas {
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.clearRect(0, 0, width, height)
+                        root.icnConjunction(ctx, width, height, iconColor)
+                    }
+                }
             }
 
             // 設定ボタン
             ToolButton {
-                text: "⚙"
-                font.pixelSize: 18
-                onClicked: settingsDrawer.open()
                 implicitWidth: 44
                 implicitHeight: 36
+                onClicked: settingsDrawer.open()
+                ToolTip.text: "設定"
+                ToolTip.visible: hovered
+                contentItem: IconCanvas {
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.clearRect(0, 0, width, height)
+                        root.icnGear(ctx, width, height, iconColor)
+                    }
+                }
             }
         }
     }
@@ -207,32 +302,42 @@ ApplicationWindow {
 
             // 日時ピッカー呼び出しボタン
             ToolButton {
-                text: "日時"
-                font.pixelSize: 11
                 implicitWidth: 44
                 implicitHeight: 44
                 onClicked: datePickerDialog.open()
                 ToolTip.text: "日時を指定"
                 ToolTip.visible: hovered
+                contentItem: IconCanvas {
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.clearRect(0, 0, width, height)
+                        root.icnCalendar(ctx, width, height, iconColor)
+                    }
+                }
             }
 
             // 現在時刻
             ToolButton {
-                text: "現在"
-                font.pixelSize: 11
-                implicitWidth: 52
+                implicitWidth: 44
                 implicitHeight: 44
                 onClicked: {
                     solarView.dateTime = (new Date())
                     if (playBtn.playing) solarView.setTrailActive(true)
                     else solarView.clearTrails()
                 }
+                ToolTip.text: "現在時刻に戻す"
+                ToolTip.visible: hovered
+                contentItem: IconCanvas {
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.clearRect(0, 0, width, height)
+                        root.icnClock(ctx, width, height, iconColor)
+                    }
+                }
             }
 
             // コマ戻し
             ToolButton {
-                text: "<"
-                font.pixelSize: 18
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
@@ -240,14 +345,21 @@ ApplicationWindow {
                 autoRepeatDelay: 400
                 autoRepeatInterval: 80
                 onClicked: stepBy(-1)
+                ToolTip.text: "1コマ戻る"
+                ToolTip.visible: hovered
+                contentItem: IconCanvas {
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.clearRect(0, 0, width, height)
+                        root.icnStepBack(ctx, width, height, iconColor)
+                    }
+                }
             }
 
             // 再生 / 停止
             ToolButton {
                 id: playBtn
                 property bool playing: false
-                text: playing ? "||" : ">"
-                font.pixelSize: 20
                 implicitWidth: 50
                 implicitHeight: 44
                 highlighted: playing
@@ -257,12 +369,25 @@ ApplicationWindow {
                     if (playing) playTimer.start()
                     else         playTimer.stop()
                 }
+                ToolTip.text: playing ? "停止" : "再生"
+                ToolTip.visible: hovered
+                contentItem: IconCanvas {
+                    id: playCanvas
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.clearRect(0, 0, width, height)
+                        if (playBtn.playing) root.icnPause(ctx, width, height, iconColor)
+                        else                 root.icnPlay(ctx, width, height, iconColor)
+                    }
+                    Connections {
+                        target: playBtn
+                        function onPlayingChanged() { playCanvas.requestPaint() }
+                    }
+                }
             }
 
             // コマ進め
             ToolButton {
-                text: ">"
-                font.pixelSize: 18
                 implicitWidth: 44
                 implicitHeight: 44
                 enabled: !playBtn.playing
@@ -270,6 +395,15 @@ ApplicationWindow {
                 autoRepeatDelay: 400
                 autoRepeatInterval: 80
                 onClicked: stepBy(1)
+                ToolTip.text: "1コマ進む"
+                ToolTip.visible: hovered
+                contentItem: IconCanvas {
+                    onPaint: {
+                        var ctx = getContext("2d")
+                        ctx.clearRect(0, 0, width, height)
+                        root.icnStepFwd(ctx, width, height, iconColor)
+                    }
+                }
             }
 
             // 速度コンボ
@@ -281,9 +415,6 @@ ApplicationWindow {
                 implicitHeight: 44
                 font.pixelSize: 12
 
-                // 横画面など画面高さが低いとき、画面内に収めてスクロール可能にする。
-                // 下部バーにあるので上方向に開く。高さは項目数ベースで決め、
-                // contentHeight への依存を避ける（相互依存でスクロール不能になるのを防ぐ）。
                 popup: Popup {
                     y: -height
                     width: speedCombo.width
@@ -311,7 +442,6 @@ ApplicationWindow {
         onTriggered: {
             var secs  = root.speedSecs[speedCombo.currentIndex]
             var newMs = solarView.dateTime.getTime() + secs * 1000
-            // 末尾を超えたら先頭へループ（連続再生のため）
             if (newMs > root.maxDateMs) {
                 var range = root.maxDateMs - root.minDateMs
                 newMs = root.minDateMs + ((newMs - root.minDateMs) % range)
@@ -335,7 +465,6 @@ ApplicationWindow {
         modal: true
         anchors.centerIn: parent
 
-        // 選択中の年・月から当月の日数を算出（日ドラムの範囲に使用）
         readonly property int selYear:  1800 + yearTumbler.currentIndex
         readonly property int selMonth: monthTumbler.currentIndex + 1
         readonly property int daysInMonth:
@@ -343,7 +472,6 @@ ApplicationWindow {
 
         function pad2(n) { return (n < 10 ? "0" : "") + n }
 
-        // 開くたびに現在時刻へ各ドラムを同期（UTC基準）
         onAboutToShow: {
             var d = solarView.dateTime
             yearTumbler.currentIndex   = d.getUTCFullYear() - 1800
@@ -364,17 +492,15 @@ ApplicationWindow {
                 verticalAlignment: Text.AlignVCenter
                 opacity: 1.0 - Math.abs(Tumbler.displacement) / 2.0
             }
-            // 各ドラムが表示テキストを決める関数を持つ
             property var labelOf: (v) => v
         }
 
         contentItem: RowLayout {
             spacing: 2
-
             DateTumbler {
                 id: yearTumbler
                 Layout.preferredWidth: 78
-                model: 251                       // 1800〜2050
+                model: 251
                 labelOf: (v) => 1800 + v
             }
             DateTumbler {
@@ -407,7 +533,7 @@ ApplicationWindow {
 
         onAccepted: {
             var y  = 1800 + yearTumbler.currentIndex
-            var mo = monthTumbler.currentIndex                       // 0始まり
+            var mo = monthTumbler.currentIndex
             var da = Math.min(dayTumbler.currentIndex + 1, daysInMonth)
             var hh = hourTumbler.currentIndex
             var mi = minuteTumbler.currentIndex
@@ -479,7 +605,6 @@ ApplicationWindow {
                     bottomPadding: 8
                 }
 
-                // ── 表示設定 ───────────────────────────────────────
                 Label { text: "表示"; color: "#aaa"; font.pixelSize: 12; topPadding: 4 }
 
                 SwitchDelegate {
@@ -503,7 +628,6 @@ ApplicationWindow {
 
                 MenuSeparator { width: parent.width - 32 }
 
-                // ── 中心天体 ───────────────────────────────────────
                 Label { text: "中心天体"; color: "#aaa"; font.pixelSize: 12 }
                 ComboBox {
                     id: centerCombo
@@ -517,7 +641,6 @@ ApplicationWindow {
 
                 MenuSeparator { width: parent.width - 32 }
 
-                // ── 方向固定 ───────────────────────────────────────
                 Label { text: "方向固定"; color: "#aaa"; font.pixelSize: 12 }
                 ButtonGroup { id: lockGroup }
                 RadioDelegate {
@@ -544,7 +667,6 @@ ApplicationWindow {
 
                 MenuSeparator { width: parent.width - 32 }
 
-                // ── 視点プリセット ─────────────────────────────────
                 Label { text: "視点プリセット"; color: "#aaa"; font.pixelSize: 12 }
                 Button {
                     width: parent.width - 32
@@ -597,9 +719,9 @@ ApplicationWindow {
                         solarView.setCamera(solarView.camLon, 89.0)
                         solarView.dirLock = 0
                     } else if (eventType.indexOf("合") >= 0) {
-                        solarView.dirLock = 1   // SunFront
+                        solarView.dirLock = 1
                     } else if (eventType.indexOf("衝") >= 0) {
-                        solarView.dirLock = 2   // SunBack
+                        solarView.dirLock = 2
                     } else {
                         solarView.dirLock = 0
                     }

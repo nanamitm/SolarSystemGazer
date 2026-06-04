@@ -26,6 +26,7 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QStatusBar>
+#include "button_icons.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -53,12 +54,18 @@ void MainWindow::buildUi()
     m_dtEdit->setCalendarPopup(true);
     m_dtEdit->setFixedWidth(200);
 
-    m_nowButton = new QPushButton("現在時刻", this);
-    m_nowButton->setFixedWidth(80);
+    m_nowButton = new QPushButton(this);
+    m_nowButton->setIcon(ButtonIcons::clockNow());
+    m_nowButton->setIconSize({20, 20});
+    m_nowButton->setFixedSize(36, 36);
+    m_nowButton->setToolTip("現在時刻に戻す");
 
-    m_playButton = new QPushButton("▶ 再生", this);
+    m_playButton = new QPushButton(this);
     m_playButton->setCheckable(true);
-    m_playButton->setFixedWidth(80);
+    m_playButton->setIcon(ButtonIcons::play());
+    m_playButton->setIconSize({20, 20});
+    m_playButton->setFixedSize(44, 36);
+    m_playButton->setToolTip("再生 / 停止");
 
     m_speedCombo = new QComboBox(this);
     // (表示ラベル, 1フレームの秒数) のペアで登録
@@ -80,28 +87,36 @@ void MainWindow::buildUi()
     m_speedCombo->setFixedWidth(90);
 
     // ----- コマ送りボタン -----
-    m_stepBkBtn = new QPushButton("|◀", this);
-    m_stepBkBtn->setFixedWidth(40);
+    m_stepBkBtn = new QPushButton(this);
+    m_stepBkBtn->setIcon(ButtonIcons::stepBack());
+    m_stepBkBtn->setIconSize({20, 20});
+    m_stepBkBtn->setFixedSize(36, 36);
     m_stepBkBtn->setToolTip("速度コンボの単位で1コマ戻る（長押しで連続）");
     m_stepBkBtn->setAutoRepeat(true);
-    m_stepBkBtn->setAutoRepeatDelay(400);    // 長押し開始までの待機 [ms]
-    m_stepBkBtn->setAutoRepeatInterval(80);  // 連続発火の間隔 [ms]
+    m_stepBkBtn->setAutoRepeatDelay(400);
+    m_stepBkBtn->setAutoRepeatInterval(80);
 
-    m_stepFwBtn = new QPushButton("▶|", this);
-    m_stepFwBtn->setFixedWidth(40);
+    m_stepFwBtn = new QPushButton(this);
+    m_stepFwBtn->setIcon(ButtonIcons::stepForward());
+    m_stepFwBtn->setIconSize({20, 20});
+    m_stepFwBtn->setFixedSize(36, 36);
     m_stepFwBtn->setToolTip("速度コンボの単位で1コマ進む（長押しで連続）");
     m_stepFwBtn->setAutoRepeat(true);
     m_stepFwBtn->setAutoRepeatDelay(400);
     m_stepFwBtn->setAutoRepeatInterval(80);
 
     // ----- 天文イベントボタン -----
-    m_eventBtn = new QPushButton("合・衝", this);
-    m_eventBtn->setFixedWidth(60);
+    m_eventBtn = new QPushButton(this);
+    m_eventBtn->setIcon(ButtonIcons::conjunction());
+    m_eventBtn->setIconSize({20, 20});
+    m_eventBtn->setFixedSize(40, 36);
     m_eventBtn->setToolTip("今日から2年間の合・衝・最大離角イベントを表示");
 
     // ----- 設定ボタン（歯車） -----
-    m_settingsBtn = new QPushButton("⚙", this);
-    m_settingsBtn->setFixedWidth(36);
+    m_settingsBtn = new QPushButton(this);
+    m_settingsBtn->setIcon(ButtonIcons::gear());
+    m_settingsBtn->setIconSize({20, 20});
+    m_settingsBtn->setFixedSize(36, 36);
     m_settingsBtn->setToolTip("表示設定・視点プリセット");
 
     // ----- 中心天体コンボ -----
@@ -228,13 +243,13 @@ void MainWindow::onNowClicked()
 void MainWindow::onPlayToggled(bool checked)
 {
     if (checked) {
-        m_playButton->setText("⏸ 停止");
+        m_playButton->setIcon(ButtonIcons::pause());
         m_stepBkBtn->setEnabled(false);
         m_stepFwBtn->setEnabled(false);
         m_solarWidget->setTrailActive(true);
         m_timer->start();
     } else {
-        m_playButton->setText("▶ 再生");
+        m_playButton->setIcon(ButtonIcons::play());
         m_timer->stop();
         m_solarWidget->setTrailActive(false);
         m_solarWidget->clearTrails();
