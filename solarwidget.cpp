@@ -932,35 +932,35 @@ void SolarWidget::wheelEvent(QWheelEvent *e)
 
 void SolarWidget::contextMenuEvent(QContextMenuEvent *e)
 {
-    QMenu menu(this);
+    // ブロッキングする exec() は使わない（wasm ではアプリが終了するため）。
+    // 選択結果は戻り値ではなく triggered シグナルで受け取る。
+    auto *menu = new QMenu(this);
+    connect(menu, &QMenu::aboutToHide, menu, &QObject::deleteLater);
 
-    QAction *labelsAct = menu.addAction("惑星名を表示");
-    labelsAct->setCheckable(true);
-    labelsAct->setChecked(m_showLabels);
+    auto addToggle = [this, menu](const QString &text, bool checked,
+                                  void (SolarWidget::*setter)(bool)) {
+        QAction *act = menu->addAction(text);
+        act->setCheckable(true);
+        act->setChecked(checked);
+        connect(act, &QAction::triggered,
+                this, [this, setter](bool c) { (this->*setter)(c); });
+    };
+    addToggle("惑星名を表示",           m_showLabels,       &SolarWidget::setShowLabels);
+    addToggle("冥王星・矮小惑星を表示", m_showDwarfPlanets, &SolarWidget::setShowDwarfPlanets);
+    addToggle("衛星を表示",             m_showSatellites,   &SolarWidget::setShowSatellites);
 
-    QAction *dwarfsAct = menu.addAction("冥王星・矮小惑星を表示");
-    dwarfsAct->setCheckable(true);
-    dwarfsAct->setChecked(m_showDwarfPlanets);
+    menu->addSeparator();
 
-    QAction *satsAct = menu.addAction("衛星を表示");
-    satsAct->setCheckable(true);
-    satsAct->setChecked(m_showSatellites);
+    auto *lockMenu = menu->addMenu("方向固定");
+    auto addLock = [this, lockMenu](const QString &text, DirLock lock) {
+        QAction *act = lockMenu->addAction(text);
+        act->setCheckable(true);
+        act->setChecked(m_dirLock == lock);
+        connect(act, &QAction::triggered, this, [this, lock]() { setDirLock(lock); });
+    };
+    addLock("固定なし",                 DirLock::None);
+    addLock("前面=太陽（合・衝確認）", DirLock::SunFront);
+    addLock("背面=太陽（夜空方向）",   DirLock::SunBack);
 
-    menu.addSeparator();
-
-    auto *lockMenu  = menu.addMenu("方向固定");
-    auto *noneAct   = lockMenu->addAction("固定なし");
-    auto *frontAct  = lockMenu->addAction("前面=太陽（合・衝確認）");
-    auto *backAct   = lockMenu->addAction("背面=太陽（夜空方向）");
-    noneAct->setCheckable(true);  noneAct->setChecked(m_dirLock == DirLock::None);
-    frontAct->setCheckable(true); frontAct->setChecked(m_dirLock == DirLock::SunFront);
-    backAct->setCheckable(true);  backAct->setChecked(m_dirLock == DirLock::SunBack);
-
-    QAction *chosen = menu.exec(e->globalPos());
-    if      (chosen == labelsAct)  setShowLabels(!m_showLabels);
-    else if (chosen == dwarfsAct)  setShowDwarfPlanets(!m_showDwarfPlanets);
-    else if (chosen == satsAct)    setShowSatellites(!m_showSatellites);
-    else if (chosen == noneAct)    setDirLock(DirLock::None);
-    else if (chosen == frontAct)   setDirLock(DirLock::SunFront);
-    else if (chosen == backAct)    setDirLock(DirLock::SunBack);
+    menu->popup(e->globalPos());
 }

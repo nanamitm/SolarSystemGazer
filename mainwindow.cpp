@@ -312,7 +312,11 @@ void MainWindow::onCenterChanged(int)
 
 void MainWindow::onSettingsClicked()
 {
-    QMenu menu(this);
+    // ブロッキングする exec() は使わない。
+    // シングルスレッドの Qt for WebAssembly ではネストしたイベントループが
+    // 使えず、呼んだ時点でアプリが終了してしまうため。
+    auto *menu = new QMenu(this);
+    connect(menu, &QMenu::aboutToHide, menu, &QObject::deleteLater);
 
     // ── 視点プリセット ──────────────────────────────────────────────
     struct Preset { const char *name; double lon, lat; };
@@ -321,7 +325,7 @@ void MainWindow::onSettingsClicked()
         {"真上",              0.0, 89.0},
         {"黄道面",            0.0,  3.0},
     };
-    auto *viewMenu = menu.addMenu("視点プリセット");
+    auto *viewMenu = menu->addMenu("視点プリセット");
     for (const auto &pr : presets) {
         connect(viewMenu->addAction(pr.name), &QAction::triggered,
                 this, [this, lon = pr.lon, lat = pr.lat]() {
@@ -329,12 +333,12 @@ void MainWindow::onSettingsClicked()
         });
     }
 
-    menu.addSeparator();
+    menu->addSeparator();
 
     // ── 表示設定 ────────────────────────────────────────────────────
-    auto addToggle = [&](const QString &text, bool checked,
+    auto addToggle = [this, menu](const QString &text, bool checked,
                          void (SolarWidget::*setter)(bool)) {
-        auto *act = menu.addAction(text);
+        auto *act = menu->addAction(text);
         act->setCheckable(true);
         act->setChecked(checked);
         connect(act, &QAction::triggered,
@@ -346,9 +350,9 @@ void MainWindow::onSettingsClicked()
               &SolarWidget::setShowDwarfPlanets);
     addToggle("衛星を表示",             m_solarWidget->showSatellites(),
               &SolarWidget::setShowSatellites);
-    menu.addSeparator();
+    menu->addSeparator();
     // 方向固定（3択サブメニュー）
-    auto *lockMenu  = menu.addMenu("方向固定");
+    auto *lockMenu  = menu->addMenu("方向固定");
     auto *noneAct2  = lockMenu->addAction("固定なし");
     auto *frontAct2 = lockMenu->addAction("前面=太陽（合・衝確認）");
     auto *backAct2  = lockMenu->addAction("背面=太陽（夜空方向）");
@@ -359,8 +363,8 @@ void MainWindow::onSettingsClicked()
     connect(frontAct2, &QAction::triggered, this, [this](){ m_solarWidget->setDirLock(SolarWidget::DirLock::SunFront); });
     connect(backAct2,  &QAction::triggered, this, [this](){ m_solarWidget->setDirLock(SolarWidget::DirLock::SunBack); });
 
-    menu.addSeparator();
-    auto *onTopAct = menu.addAction("常に最前面に表示");
+    menu->addSeparator();
+    auto *onTopAct = menu->addAction("常に最前面に表示");
     onTopAct->setCheckable(true);
     onTopAct->setChecked(windowFlags() & Qt::WindowStaysOnTopHint);
     connect(onTopAct, &QAction::triggered, this, [this](bool checked) {
@@ -368,7 +372,7 @@ void MainWindow::onSettingsClicked()
         QTimer::singleShot(0, this, &QWidget::show);
     });
 
-    menu.exec(m_settingsBtn->mapToGlobal(
+    menu->popup(m_settingsBtn->mapToGlobal(
         QPoint(0, m_settingsBtn->height())));
 }
 
