@@ -5,6 +5,7 @@
 #ifdef Q_OS_WASM
 #include <QFontDatabase>
 #include <QFont>
+#include <QScreen>
 
 // Qt for WebAssembly bundles DejaVu only, which has no CJK glyphs, so every
 // Japanese label would render as tofu. resources/fonts holds a Regular
@@ -37,6 +38,15 @@ int main(int argc, char *argv[])
 #endif
 
     MainWindow w;
+#ifdef Q_OS_WASM
+    // ブラウザの表示領域いっぱいに広げ、リサイズにも追従する
+    // （Qt for WebAssembly はウィンドウを自動では追従させない）
+    if (QScreen* screen = app.primaryScreen()) {
+        w.setGeometry(screen->geometry());
+        QObject::connect(screen, &QScreen::geometryChanged,
+                         &w, [&w](const QRect& g) { w.setGeometry(g); });
+    }
+#endif
     w.show();
     return app.exec();
 }
