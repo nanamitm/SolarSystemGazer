@@ -23,6 +23,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QHBoxLayout>
+#include "flowlayout.h"
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QStatusBar>
@@ -169,24 +170,36 @@ void MainWindow::buildUi()
             this, &MainWindow::onCenterChanged);
 
     // ----- レイアウト -----
-    QHBoxLayout *toolbar = new QHBoxLayout;
-    toolbar->addWidget(new QLabel("日時 (UTC):"));
-    toolbar->addWidget(m_dtEdit);
-    toolbar->addSpacing(8);
-    toolbar->addWidget(m_nowButton);
-    toolbar->addWidget(m_stepBkBtn);
-    toolbar->addWidget(m_playButton);
-    toolbar->addWidget(m_stepFwBtn);
-    toolbar->addSpacing(12);
-    toolbar->addWidget(new QLabel("ステップ:"));
-    toolbar->addWidget(m_speedCombo);
-    toolbar->addSpacing(12);
-    toolbar->addWidget(m_eventBtn);
-    toolbar->addSpacing(12);
-    toolbar->addWidget(new QLabel("中心:"));
-    toolbar->addWidget(m_centerCombo);
-    toolbar->addStretch();
-    toolbar->addWidget(m_settingsBtn);
+    // wasm ではブラウザ幅がツールバー 1 行分に足りないことがあるので折り返す。
+    // デスクトップは従来どおり 1 行のまま。
+#ifdef Q_OS_WASM
+    auto *toolbar = new FlowLayout(nullptr, 0, 6);
+    auto addW       = [toolbar](QWidget *w) { toolbar->addWidget(w); };
+    auto addSpace   = [](int) {};
+    auto addStretch = []() {};
+#else
+    auto *toolbar = new QHBoxLayout;
+    auto addW       = [toolbar](QWidget *w) { toolbar->addWidget(w); };
+    auto addSpace   = [toolbar](int n) { toolbar->addSpacing(n); };
+    auto addStretch = [toolbar]() { toolbar->addStretch(); };
+#endif
+    addW(new QLabel("日時 (UTC):"));
+    addW(m_dtEdit);
+    addSpace(8);
+    addW(m_nowButton);
+    addW(m_stepBkBtn);
+    addW(m_playButton);
+    addW(m_stepFwBtn);
+    addSpace(12);
+    addW(new QLabel("ステップ:"));
+    addW(m_speedCombo);
+    addSpace(12);
+    addW(m_eventBtn);
+    addSpace(12);
+    addW(new QLabel("中心:"));
+    addW(m_centerCombo);
+    addStretch();
+    addW(m_settingsBtn);
 
     QVBoxLayout *main = new QVBoxLayout;
     main->setContentsMargins(6, 6, 6, 6);

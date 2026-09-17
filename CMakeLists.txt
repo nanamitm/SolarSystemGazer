@@ -133,6 +133,8 @@ else()
     endif()
     cmake_language(CALL ${SSG_ADD_EXECUTABLE} SolarSystemGazer
         main.cpp
+        appsettings.h
+        flowlayout.h
         mainwindow.h
         mainwindow.cpp
         solarwidget.h
