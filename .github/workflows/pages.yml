@@ -57,6 +57,8 @@ jobs:
 
       - name: Configure
         run: |
+          # the wasm archive does not carry the executable bit on its scripts
+          chmod +x "$QT_ROOT_DIR/bin/"* "$QT_ROOT_DIR/libexec/"* || true
           "$QT_ROOT_DIR/bin/qt-cmake" -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DQT_HOST_PATH="$(dirname "$QT_ROOT_DIR")/gcc_64"
