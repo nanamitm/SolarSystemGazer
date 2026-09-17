@@ -1,0 +1,95 @@
+<!doctype html>
+<!-- WebAssembly 版のページシェル。Qt 既定の wasm_shell.html を置き換え、
+     表示領域いっぱいのキャンバスと独自のローディング画面にしたもの。
+     シングルスレッド版のため SharedArrayBuffer / COOP・COEP は不要。 -->
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, height=device-height, user-scalable=0">
+<meta name="theme-color" content="#0d1020">
+<meta name="description" content="NASA JPL の軌道要素で太陽系の惑星配置を可視化する Solar System Gazer の Web 版。">
+<title>Solar System Gazer</title>
+<style>
+  html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #0d1020;
+      color: #dfe4f5;
+      font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans JP', sans-serif;
+  }
+  #screen { width: 100%; height: 100%; display: none; }
+
+  #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      text-align: center;
+      padding: 16px;
+  }
+  #loading h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: .04em; }
+  #status     { font-size: 13px; opacity: .75; }
+  #hint       { font-size: 12px; opacity: .5; max-width: 26em; line-height: 1.6; }
+
+  .spinner {
+      width: 38px;
+      height: 38px;
+      border: 4px solid rgba(255, 255, 255, .18);
+      border-top-color: #9fb4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <h1>Solar System Gazer</h1>
+  <div id="status">Loading…</div>
+  <div id="hint">約 6&nbsp;MB を読み込みます。初回は数秒かかります。</div>
+  <noscript>JavaScript is disabled. Please enable JavaScript to use this application.</noscript>
+</div>
+<div id="screen"></div>
+
+<script>
+async function init() {
+    const loading = document.querySelector('#loading');
+    const screen  = document.querySelector('#screen');
+    const status  = document.querySelector('#status');
+
+    try {
+        await qtLoad({
+            qt: {
+                onLoaded: () => {
+                    loading.style.display = 'none';
+                    screen.style.display  = 'block';
+                },
+                onExit: exitData => {
+                    status.textContent = 'Application exit'
+                        + (exitData.code !== undefined ? ` with code ${exitData.code}` : '')
+                        + (exitData.text !== undefined ? ` (${exitData.text})` : '');
+                    loading.style.display = 'flex';
+                    screen.style.display  = 'none';
+                },
+                entryFunction: window.SolarSystemGazer_entry,
+                containerElements: [screen],
+            }
+        });
+    } catch (e) {
+        console.error(e);
+        status.textContent = 'Failed to start: ' + e;
+    }
+}
+</script>
+<script src="SolarSystemGazer.js"></script>
+<script src="qtloader.js"></script>
+<script>init();</script>
+</body>
+</html>

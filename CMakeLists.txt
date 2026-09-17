@@ -15,8 +15,8 @@ else()
     find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
 endif()
 
-# ===== アイコン生成ツール（デスクトップのみ） =====
-if(NOT ANDROID)
+# ===== アイコン生成ツール（デスクトップ/Android のみ。wasm ではホスト実行できない） =====
+if(NOT ANDROID AND NOT EMSCRIPTEN)
     add_executable(icon_gen tools/icon_gen.cpp icon_draw.h)
     target_link_libraries(icon_gen PRIVATE Qt6::Core Qt6::Gui)
 
@@ -125,7 +125,13 @@ if(ANDROID)
 
 else()
     # ----- Desktop (Qt Widgets) -----
-    add_executable(SolarSystemGazer
+    # wasm は Qt のターゲットヘルパーが必要（embind のリンク指定・HTML/ローダー生成）
+    if(EMSCRIPTEN)
+        set(SSG_ADD_EXECUTABLE qt_add_executable)
+    else()
+        set(SSG_ADD_EXECUTABLE add_executable)
+    endif()
+    cmake_language(CALL ${SSG_ADD_EXECUTABLE} SolarSystemGazer
         main.cpp
         mainwindow.h
         mainwindow.cpp
@@ -140,7 +146,9 @@ else()
         icon_draw.h
         ${APP_EXTRA_SOURCES}
     )
-    add_dependencies(SolarSystemGazer generate_icon)
+    if(NOT EMSCRIPTEN)
+        add_dependencies(SolarSystemGazer generate_icon)
+    endif()
 
     target_link_libraries(SolarSystemGazer PRIVATE
         Qt6::Core Qt6::Gui Qt6::Widgets
@@ -149,4 +157,23 @@ else()
     set_target_properties(SolarSystemGazer PROPERTIES
         WIN32_EXECUTABLE TRUE
     )
+
+    # ----- WebAssembly 固有 -----
+    if(EMSCRIPTEN)
+        # Qt wasm は DejaVu しか持たないため、日本語が豆腐になる。
+        # tools/subset_font.py が生成した UI 使用文字だけのフォントを埋め込む。
+        qt_add_resources(SolarSystemGazer "fonts"
+            PREFIX "/fonts"
+            FILES resources/fonts/NotoSansJP-subset.ttf
+        )
+
+        set_target_properties(SolarSystemGazer PROPERTIES
+            QT_WASM_INITIAL_MEMORY "64MB"
+        )
+
+        foreach(wasm_file index.html)
+            configure_file(${CMAKE_CURRENT_SOURCE_DIR}/wasm/${wasm_file}
+                           ${CMAKE_CURRENT_BINARY_DIR}/${wasm_file} COPYONLY)
+        endforeach()
+    endif()
 endif()

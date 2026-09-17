@@ -45,6 +45,48 @@ NASA JPL の軌道要素に基づいて太陽系の惑星配置をリアルタ�
 
 ---
 
+## Web 版（Qt for WebAssembly）
+
+デスクトップ版と同じ Qt Widgets アプリを WebAssembly にビルドしたものを GitHub Pages で公開しています：
+**https://nanamitm.github.io/SolarSystemGazer/**
+
+- 機能はデスクトップ版と同じ（ウィンドウ常時最前面のみブラウザでは無効）
+- 設定はブラウザの `localStorage` に保存されます（5 秒ごとに変化があれば書き込み）
+- 初回ロードは gzip 後で約 5.5 MB
+
+スレッドを使っていないためシングルスレッド版 Qt でビルドでき、`SharedArrayBuffer`
+（＝COOP/COEP ヘッダ）は不要です。
+
+**ビルドに必要なもの**
+- Qt 6.11.1 の WebAssembly 版（`wasm_singlethread`）＋同バージョンのホスト Qt
+- Emscripten 4.0.7（この Qt がビルドに使ったバージョン。他だと拒否されます）
+
+```bash
+source /path/to/emsdk/emsdk_env.sh
+/path/to/Qt/6.11.1/wasm_singlethread/bin/qt-cmake -S . -B build-wasm   -DCMAKE_BUILD_TYPE=Release   -DQT_HOST_PATH=/path/to/Qt/6.11.1/gcc_64
+cmake --build build-wasm
+python -m http.server 8080 --directory build-wasm   # /index.html を開く
+```
+
+`.github/workflows/pages.yml` が `master` への push でビルドとデプロイを行います。
+公開物は `wasm/make-dist.py` が組み立て、ファイル名に内容ハッシュを付けます
+（GitHub Pages が `Cache-Control: max-age=600` を返すため、新しい `index.html`
+と古い wasm が混ざるのを防ぐため）。
+
+### 日本語フォント
+
+Qt for WebAssembly は DejaVu しか同梱しておらず CJK が豆腐になるため、
+`resources/fonts/NotoSansJP-subset.ttf`（UI で使う約 550 文字だけに絞った
+Noto Sans JP Regular・約 115 KB）を埋め込んでいます。日本語の文言を追加したら
+再生成してください：
+
+```bash
+python -m pip install fonttools
+python tools/subset_font.py path/to/NotoSansJP.ttf
+```
+
+---
+
 ## 動作環境
 
 | プラットフォーム | 動作確認済み環境 |
@@ -58,7 +100,7 @@ NASA JPL の軌道要素に基づいて太陽系の惑星配置をリアルタ�
 ## ビルド方法
 
 ### 必要なもの
-- Qt **6.4 以降**（6.8 以降を推奨）
+- Qt **6.5 以降**（6.8 以降を推奨）
 - CMake 3.20 以降
 
 ### Windows（Qt インストーラー + MinGW）
@@ -113,6 +155,7 @@ cmake --build build --parallel
 | 惑星物理データ | [NASA Planetary Fact Sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/) |
 | 惑星北極方向 | IAU Working Group on Cartographic Coordinates（J2000.0 黄道座標に変換） |
 | 衛星数 | 2023–2024 年確定値 |
+| Web 版の日本語フォント | [Noto Sans JP](https://fonts.google.com/noto/specimen/Noto+Sans+JP)（SIL Open Font License 1.1、`resources/fonts/OFL.txt`） |
 
 軌道計算の有効期間は **1800〜2050 年**です。範囲外では精度が低下します。
 

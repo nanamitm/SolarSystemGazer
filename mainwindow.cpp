@@ -4,7 +4,7 @@
 #include "eventdetector.h"
 #include "orbitalcalc.h"
 
-#include <QSettings>
+#include "appsettings.h"
 #include <QCloseEvent>
 #include <QTimeZone>
 #include <QDialog>
@@ -32,9 +32,21 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     setWindowTitle("Solar System Gazer");
+#ifdef Q_OS_WASM
+    setMinimumSize(320, 480);   // ブラウザの表示領域はスマホ幅まで小さくなる
+#else
     setMinimumSize(720, 680);
+#endif
     buildUi();
     loadSettings();
+
+#ifdef Q_OS_WASM
+    // タブを閉じても closeEvent は呼ばれないので、変化があれば定期的に保存する
+    auto *autoSave = new QTimer(this);
+    autoSave->setInterval(5000);
+    connect(autoSave, &QTimer::timeout, this, &MainWindow::saveSettings);
+    autoSave->start();
+#endif
 }
 
 void MainWindow::buildUi()
@@ -46,10 +58,10 @@ void MainWindow::buildUi()
     m_dtEdit = new QDateTimeEdit(this);
     m_dtEdit->setDisplayFormat("yyyy-MM-dd  hh:mm");
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-    m_dtEdit->setTimeZone(QTimeZone(Qt::UTC));
+    m_dtEdit->setTimeZone(QTimeZone::UTC);
 #endif
-    m_dtEdit->setMinimumDateTime(QDateTime(QDate(1800,  1,  1), QTime(0,  0), QTimeZone(Qt::UTC)));
-    m_dtEdit->setMaximumDateTime(QDateTime(QDate(2050, 12, 31), QTime(23, 59), QTimeZone(Qt::UTC)));
+    m_dtEdit->setMinimumDateTime(QDateTime(QDate(1800,  1,  1), QTime(0,  0), QTimeZone::UTC));
+    m_dtEdit->setMaximumDateTime(QDateTime(QDate(2050, 12, 31), QTime(23, 59), QTimeZone::UTC));
     m_dtEdit->setDateTime(QDateTime::currentDateTimeUtc());
     m_dtEdit->setCalendarPopup(true);
     m_dtEdit->setFixedWidth(200);
@@ -469,7 +481,7 @@ void MainWindow::onShowEvents()
         // ダブルクリック起因の時間変更はイベントリストを更新しない
         m_suppressEventRefresh = true;
         m_dtEdit->setDateTime(QDateTime::fromMSecsSinceEpoch(
-            qint64((jd - 2440587.5) * 86400000.0), QTimeZone(Qt::UTC)));
+            qint64((jd - 2440587.5) * 86400000.0), QTimeZone::UTC));
         m_suppressEventRefresh = false;
 
         if (zoomCb->isChecked()) {
@@ -537,7 +549,7 @@ void MainWindow::onEventRefresh()
     for (int r = 0; r < events.size(); ++r) {
         const auto &ev = events[r];
         const QDateTime dt = QDateTime::fromMSecsSinceEpoch(
-            qint64((ev.jd - 2440587.5) * 86400000.0), QTimeZone(Qt::UTC));
+            qint64((ev.jd - 2440587.5) * 86400000.0), QTimeZone::UTC);
 
         auto mk = [](const QString &s) {
             auto *item = new QTableWidgetItem(s);
@@ -561,23 +573,38 @@ void MainWindow::onEventRefresh()
 
 void MainWindow::saveSettings()
 {
-    QSettings s("Qt6 Demo", "SolarSystemGazer");
-    s.setValue("showLabels",       m_solarWidget->showLabels());
-    s.setValue("showDwarfPlanets", m_solarWidget->showDwarfPlanets());
-    s.setValue("showSatellites",   m_solarWidget->showSatellites());
-    s.setValue("dirLock",          (int)m_solarWidget->dirLock());
-    s.setValue("geometry",         saveGeometry());
-    s.setValue("alwaysOnTop",      bool(windowFlags() & Qt::WindowStaysOnTopHint));
-    s.setValue("camLon",           m_solarWidget->camLon());
-    s.setValue("camLat",           m_solarWidget->camLat());
-    s.setValue("camDist",          m_solarWidget->camDist());
-    s.setValue("centerBody",       m_solarWidget->centerBody());
-    s.setValue("speedSecs",        m_speedCombo->currentData().toLongLong());
+    QList<QPair<QString, QVariant>> values = {
+        {"showLabels",       m_solarWidget->showLabels()},
+        {"showDwarfPlanets", m_solarWidget->showDwarfPlanets()},
+        {"showSatellites",   m_solarWidget->showSatellites()},
+        {"dirLock",          (int)m_solarWidget->dirLock()},
+        {"camLon",           m_solarWidget->camLon()},
+        {"camLat",           m_solarWidget->camLat()},
+        {"camDist",          m_solarWidget->camDist()},
+        {"centerBody",       m_solarWidget->centerBody()},
+        {"speedSecs",        m_speedCombo->currentData().toLongLong()},
+    };
+#ifndef Q_OS_WASM
+    // ブラウザではウィンドウ枠も常時最前面も存在しない
+    values.append({"geometry",    saveGeometry()});
+    values.append({"alwaysOnTop", bool(windowFlags() & Qt::WindowStaysOnTopHint)});
+#endif
+
+    // wasm では定期的に呼ばれるため、変化が無ければ書き込まない
+    QString snapshot;
+    for (const auto &kv : values)
+        snapshot += kv.first + '=' + kv.second.toString() + ';';
+    if (snapshot == m_savedSnapshot) return;
+    m_savedSnapshot = snapshot;
+
+    AppSettings s;
+    for (const auto &kv : values)
+        s.setValue(kv.first, kv.second);
 }
 
 void MainWindow::loadSettings()
 {
-    QSettings s("Qt6 Demo", "SolarSystemGazer");
+    AppSettings s;
 
     // 再生速度（秒数で保存→コンボで一致するインデックスを選択）
     const qint64 savedSecs = s.value("speedSecs", 86400LL).toLongLong();
@@ -609,10 +636,12 @@ void MainWindow::loadSettings()
     m_solarWidget->setShowSatellites(s.value("showSatellites", false).toBool());
     m_solarWidget->setDirLock(static_cast<SolarWidget::DirLock>(
         s.value("dirLock", 0).toInt()));
+#ifndef Q_OS_WASM
     const QByteArray geo = s.value("geometry").toByteArray();
     if (!geo.isEmpty()) restoreGeometry(geo);
     if (s.value("alwaysOnTop", false).toBool())
         setWindowFlag(Qt::WindowStaysOnTopHint, true);
+#endif
 }
 
 void MainWindow::closeEvent(QCloseEvent *e)

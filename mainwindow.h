@@ -34,10 +34,11 @@ protected:
     void closeEvent(QCloseEvent *e) override;
 
 private:
-    void saveSettings();
+    void saveSettings();   // wasm では 5 秒ごとにも呼ばれる（変化時のみ書き込み）
     void loadSettings();
 
 private:
+    QString         m_savedSnapshot;   // 直近に保存した設定（差分判定用）
     SolarWidget    *m_solarWidget;
     QDateTimeEdit  *m_dtEdit;
     QPushButton    *m_nowButton;

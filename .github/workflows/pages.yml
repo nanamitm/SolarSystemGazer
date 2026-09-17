@@ -1,0 +1,79 @@
+name: Deploy WebAssembly app to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '**.cpp'
+      - '**.h'
+      - 'CMakeLists.txt'
+      - 'wasm/**'
+      - 'resources/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deployment finish before starting the next one
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  QT_VERSION: '6.11.1'
+  # Qt pins the Emscripten version it was built with — 6.11.1 needs exactly this
+  EM_VERSION: '4.0.7'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v16
+        with:
+          version: ${{ env.EM_VERSION }}
+          actions-cache-folder: emsdk-cache
+
+      # The app has no threads, so the single-threaded Qt is enough — no
+      # SharedArrayBuffer and therefore no cross-origin isolation needed.
+      # --autodesktop also installs the matching host Qt, needed for moc/rcc.
+      - name: Install Qt (WebAssembly, single-threaded)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          host:    all_os
+          target:  wasm
+          arch:    wasm_singlethread
+          extra:   --autodesktop
+          cache:   true
+
+      - name: Configure
+        run: |
+          "$QT_ROOT_DIR/bin/qt-cmake" -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DQT_HOST_PATH="$(dirname "$QT_ROOT_DIR")/gcc_64"
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # Hashed file names: GitHub Pages serves everything with max-age=600,
+      # so without them a browser can mix a new index.html with a stale wasm
+      - name: Collect site
+        run: python3 wasm/make-dist.py build dist
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v5
