@@ -363,6 +363,10 @@ void MainWindow::onSettingsClicked()
     connect(frontAct2, &QAction::triggered, this, [this](){ m_solarWidget->setDirLock(SolarWidget::DirLock::SunFront); });
     connect(backAct2,  &QAction::triggered, this, [this](){ m_solarWidget->setDirLock(SolarWidget::DirLock::SunBack); });
 
+    // ブラウザにはウィンドウマネージャが無いので wasm では出さない。
+    // setWindowFlag() はウィンドウを作り直すため、wasm ではその後に開く
+    // ダイアログ（天文イベント）が表示されなくなる副作用もある。
+#ifndef Q_OS_WASM
     menu->addSeparator();
     auto *onTopAct = menu->addAction("常に最前面に表示");
     onTopAct->setCheckable(true);
@@ -371,6 +375,7 @@ void MainWindow::onSettingsClicked()
         setWindowFlag(Qt::WindowStaysOnTopHint, checked);
         QTimer::singleShot(0, this, &QWidget::show);
     });
+#endif
 
     menu->popup(m_settingsBtn->mapToGlobal(
         QPoint(0, m_settingsBtn->height())));
