@@ -41,10 +41,10 @@ QVector<AstroEvent> detectEvents(double startJD, double endJD, bool includeDwarf
     for (int i = 0; i < N; ++i) {
         if (i == 2) continue;
         prev2[i] = calcElong(i, startJD);
-        prev1[i] = calcElong(i, startJD + 1.0);
+        prev1[i] = prev2[i];
     }
 
-    for (double jd = startJD + 2.0; jd <= endJD; jd += 1.0) {
+    for (double jd = startJD + 1.0; jd <= endJD; jd += 1.0) {
         for (int i = 0; i < N; ++i) {
             if (i == 2) continue;
 
@@ -80,7 +80,7 @@ QVector<AstroEvent> detectEvents(double startJD, double endJD, bool includeDwarf
             }
 
             // ─── 内惑星の最大離角検出 ────────────────────────────────────
-            if (isInner(i)) {
+            if (isInner(i) && jd >= startJD + 2.0) {
                 const double d1 = prev - pp;    // 前ステップの変化量
                 const double d2 = curr - prev;  // 今ステップの変化量
                 if (d1 > 0.0 && d2 <= 0.0 && prev > 5.0) {
@@ -104,9 +104,9 @@ QVector<AstroEvent> detectEvents(double startJD, double endJD, bool includeDwarf
 
         QVector<double> dp1(dwarfs.size());
         for (int i = 0; i < dwarfs.size(); ++i)
-            dp1[i] = calcElongFromElem(dwarfs[i].elem, startJD + 1.0);
+            dp1[i] = calcElongFromElem(dwarfs[i].elem, startJD);
 
-        for (double jd = startJD + 2.0; jd <= endJD; jd += 1.0) {
+        for (double jd = startJD + 1.0; jd <= endJD; jd += 1.0) {
             for (int i = 0; i < dwarfs.size(); ++i) {
                 const double curr = calcElongFromElem(dwarfs[i].elem, jd);
                 const double prev = dp1[i];
