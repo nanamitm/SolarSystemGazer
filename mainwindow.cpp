@@ -61,8 +61,8 @@ void MainWindow::buildUi()
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     m_dtEdit->setTimeZone(QTimeZone::UTC);
 #endif
-    m_dtEdit->setMinimumDateTime(QDateTime(QDate(1800,  1,  1), QTime(0,  0), QTimeZone::UTC));
-    m_dtEdit->setMaximumDateTime(QDateTime(QDate(2050, 12, 31), QTime(23, 59), QTimeZone::UTC));
+    m_dtEdit->setMinimumDateTime(QDateTime(QDate(1800,  1,  1), QTime(0,  0), Qt::UTC));
+    m_dtEdit->setMaximumDateTime(QDateTime(QDate(2050, 12, 31), QTime(23, 59), Qt::UTC));
     m_dtEdit->setDateTime(QDateTime::currentDateTimeUtc());
     m_dtEdit->setCalendarPopup(true);
     m_dtEdit->setFixedWidth(200);
@@ -503,7 +503,7 @@ void MainWindow::onShowEvents()
         // ダブルクリック起因の時間変更はイベントリストを更新しない
         m_suppressEventRefresh = true;
         m_dtEdit->setDateTime(QDateTime::fromMSecsSinceEpoch(
-            qint64((jd - 2440587.5) * 86400000.0), QTimeZone::UTC));
+            qint64((jd - 2440587.5) * 86400000.0), Qt::UTC));
         m_suppressEventRefresh = false;
 
         if (zoomCb->isChecked()) {
@@ -571,7 +571,7 @@ void MainWindow::onEventRefresh()
     for (int r = 0; r < events.size(); ++r) {
         const auto &ev = events[r];
         const QDateTime dt = QDateTime::fromMSecsSinceEpoch(
-            qint64((ev.jd - 2440587.5) * 86400000.0), QTimeZone::UTC);
+            qint64((ev.jd - 2440587.5) * 86400000.0), Qt::UTC);
 
         auto mk = [](const QString &s) {
             auto *item = new QTableWidgetItem(s);
