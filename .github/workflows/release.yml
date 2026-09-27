@@ -231,8 +231,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
 
       - name: Build APK (unsigned release)
-        # androiddeployqt は Gradle 成功後に非0で終了することがあるが APK は生成される
-        run: cmake --build build-android || true
+        run: cmake --build build-android
 
       - name: Sign release APK (or keep unsigned if no secrets)
         env:
