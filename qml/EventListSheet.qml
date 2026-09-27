@@ -61,7 +61,8 @@ Item {
 
     function refresh() {
         var startJd = bridge.dateToJd(solarViewRef.dateTime)
-        events = bridge.computeEvents(startJd, startJd + 365.25 * 2, includeDwarfs)
+        var maxJd = bridge.dateToJd(new Date(Date.UTC(2050, 11, 31, 23, 59)))
+        events = bridge.computeEvents(startJd, Math.min(startJd + 365.25 * 2, maxJd), includeDwarfs)
     }
 
     Component.onCompleted: refresh()
